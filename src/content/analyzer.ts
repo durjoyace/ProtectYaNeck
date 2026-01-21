@@ -2,6 +2,53 @@ import { RiskItem, RiskCategory, RiskSeverity } from '../shared/types';
 import { RISK_KEYWORDS, RISK_CATEGORIES } from '../shared/constants';
 import { analyzeWithLLM, getAPIKey } from '../services/llm-analyzer';
 
+// Dangerous clause combinations that increase severity
+const DANGEROUS_COMBINATIONS: Array<{
+  categories: RiskCategory[];
+  severityBoost: number;
+  warning: string;
+}> = [
+  {
+    categories: ['arbitration', 'liability_waiver'],
+    severityBoost: 1,
+    warning: 'Combined arbitration and liability waiver severely limits your legal options',
+  },
+  {
+    categories: ['data_sharing', 'third_party_access', 'data_retention'],
+    severityBoost: 1,
+    warning: 'Your data can be shared widely and kept indefinitely',
+  },
+  {
+    categories: ['auto_renewal', 'account_termination'],
+    severityBoost: 1,
+    warning: 'They can charge you automatically but terminate you at will',
+  },
+];
+
+// Red flag phrases that always indicate critical severity
+const RED_FLAGS = [
+  /waive\s+(your\s+)?right\s+to\s+(a\s+)?jury/i,
+  /class\s+action\s+waiver/i,
+  /binding\s+arbitration/i,
+  /sell\s+(your\s+)?(personal\s+)?(data|information)/i,
+  /perpetual\s+(and\s+)?irrevocable\s+license/i,
+  /without\s+(prior\s+)?notice/i,
+  /sole\s+(and\s+absolute\s+)?discretion/i,
+  /indemnify\s+(and\s+)?hold\s+harmless/i,
+  /waive\s+any\s+claims/i,
+  /no\s+refunds?\s+(under\s+any\s+circumstances)?/i,
+];
+
+// Average risk scores for comparison (would be populated from real data)
+const INDUSTRY_AVERAGES: Record<string, number> = {
+  'social_media': 72,
+  'ecommerce': 58,
+  'saas': 54,
+  'finance': 68,
+  'healthcare': 62,
+  'default': 55,
+};
+
 /**
  * Analyzes text for legal risks
  * Uses LLM when available, falls back to keyword matching
@@ -159,4 +206,134 @@ export function generateOverallSummary(risks: RiskItem[]): string {
   }
 
   return summary.trim();
+}
+
+/**
+ * Calculates a risk score (0-100) for comparison purposes
+ */
+export function calculateRiskScore(risks: RiskItem[]): number {
+  if (risks.length === 0) return 0;
+
+  let score = 0;
+
+  // Base score from individual risks
+  for (const risk of risks) {
+    score += severityRank(risk.severity) * 8;
+  }
+
+  // Check for dangerous combinations
+  const categories = risks.map(r => r.category);
+  for (const combo of DANGEROUS_COMBINATIONS) {
+    const hasAllCategories = combo.categories.every(c => categories.includes(c));
+    if (hasAllCategories) {
+      score += combo.severityBoost * 15;
+    }
+  }
+
+  // Cap at 100
+  return Math.min(100, score);
+}
+
+/**
+ * Compares risk score to industry average
+ */
+export function compareToAverage(score: number, industry: string = 'default'): {
+  comparison: 'better' | 'average' | 'worse';
+  percentile: number;
+  message: string;
+} {
+  const average = INDUSTRY_AVERAGES[industry] || INDUSTRY_AVERAGES.default;
+  const difference = score - average;
+
+  if (difference < -15) {
+    return {
+      comparison: 'better',
+      percentile: Math.max(5, 50 - Math.abs(difference)),
+      message: `This agreement is better than ${100 - Math.max(5, 50 - Math.abs(difference))}% of similar services`,
+    };
+  } else if (difference > 15) {
+    return {
+      comparison: 'worse',
+      percentile: Math.min(95, 50 + difference),
+      message: `This agreement is riskier than ${Math.min(95, 50 + difference)}% of similar services`,
+    };
+  } else {
+    return {
+      comparison: 'average',
+      percentile: 50,
+      message: 'This agreement has typical risk levels for this type of service',
+    };
+  }
+}
+
+/**
+ * Detects dangerous clause combinations
+ */
+export function detectDangerousCombinations(risks: RiskItem[]): string[] {
+  const warnings: string[] = [];
+  const categories = risks.map(r => r.category);
+
+  for (const combo of DANGEROUS_COMBINATIONS) {
+    const hasAllCategories = combo.categories.every(c => categories.includes(c));
+    if (hasAllCategories) {
+      warnings.push(combo.warning);
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Checks for red flag phrases that indicate serious issues
+ */
+export function detectRedFlags(text: string): string[] {
+  const flags: string[] = [];
+
+  for (const pattern of RED_FLAGS) {
+    const match = text.match(pattern);
+    if (match) {
+      flags.push(match[0]);
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * Enhanced analysis that includes scoring and comparisons
+ */
+export function analyzeRisksEnhanced(text: string): {
+  risks: RiskItem[];
+  score: number;
+  comparison: ReturnType<typeof compareToAverage>;
+  redFlags: string[];
+  combinationWarnings: string[];
+  overallSeverity: RiskSeverity;
+  summary: string;
+} {
+  const risks = analyzeRisks(text);
+  const score = calculateRiskScore(risks);
+  const comparison = compareToAverage(score);
+  const redFlags = detectRedFlags(text);
+  const combinationWarnings = detectDangerousCombinations(risks);
+  const overallSeverity = calculateOverallSeverity(risks);
+  const summary = generateOverallSummary(risks);
+
+  // Boost severity if red flags found
+  let finalSeverity = overallSeverity;
+  if (redFlags.length >= 3 && finalSeverity !== 'critical') {
+    finalSeverity = 'critical';
+  } else if (redFlags.length >= 2 && severityRank(finalSeverity) < 3) {
+    finalSeverity = 'high';
+  }
+
+  return {
+    risks,
+    score,
+    comparison,
+    redFlags,
+    combinationWarnings,
+    overallSeverity: finalSeverity,
+    summary,
+  };
 }

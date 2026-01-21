@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProtectYaNeck - Stop Signing Away Your Rights</title>
+  <meta name="description" content="Chrome extension that scans Terms of Service and Privacy Policies in real-time. See what you're really agreeing to before you click Accept.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ProtectYaNeck - Your Legal Safety Layer">
+  <meta property="og:description" content="Stop signing away your rights. See what's hidden in the fine print.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://protectyaneck.com">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ProtectYaNeck">
+  <meta name="twitter:description" content="Chrome extension that reads the fine print so you don't have to.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --success: #22c55e;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .nav-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--gray-900);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--gray-600);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      font-size: 16px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--gray-700);
+      border: 2px solid var(--gray-200);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 140px 24px 80px;
+      text-align: center;
+      background: linear-gradient(180deg, var(--gray-50) 0%, white 100%);
+    }
+
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary);
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+
+    .hero-highlight {
+      background: linear-gradient(135deg, var(--primary), var(--danger));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--gray-600);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+
+    /* Problem Section */
+    .problem {
+      padding: 80px 24px;
+      background: var(--gray-900);
+      color: white;
+    }
+
+    .problem-content {
+      max-width: 1000px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .problem h2 {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .problem p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 18px;
+      margin-bottom: 48px;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      text-align: left;
+    }
+
+    .problem-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .problem-card-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .problem-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .problem-card p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0;
+    }
+
+    /* Features Section */
+    .features {
+      padding: 100px 24px;
+    }
+
+    .features-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .features > p {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 18px;
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      border-radius: 16px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(59, 130, 246, 0.1);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--gray-600);
+      font-size: 15px;
+    }
+
+    /* Risk Categories */
+    .risks {
+      padding: 80px 24px;
+      background: var(--gray-50);
+    }
+
+    .risks-content {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .risks h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 48px;
+    }
+
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .risk-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--gray-200);
+    }
+
+    .risk-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .risk-badge.critical { background: #fecaca; color: #991b1b; }
+    .risk-badge.high { background: #fed7aa; color: #9a3412; }
+    .risk-badge.medium { background: #fef3c7; color: #92400e; }
+    .risk-badge.low { background: #d1fae5; color: #065f46; }
+
+    .risk-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* Pricing */
+    .pricing {
+      padding: 100px 24px;
+    }
+
+    .pricing-content {
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .pricing h2 {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .pricing > p {
+      color: var(--gray-600);
+      font-size: 18px;
+      margin-bottom: 48px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .pricing-card {
+      padding: 40px 32px;
+      border-radius: 16px;
+      border: 2px solid var(--gray-200);
+      text-align: left;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--primary);
+      background: linear-gradient(180deg, rgba(59, 130, 246, 0.05) 0%, white 100%);
+    }
+
+    .pricing-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .pricing-price {
+      font-size: 48px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .pricing-price span {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .pricing-desc {
+      color: var(--gray-600);
+      margin-bottom: 32px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 15px;
+    }
+
+    .pricing-features li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .pricing-card .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 100px 24px;
+      background: linear-gradient(135deg, var(--gray-900), #1e3a5f);
+      color: white;
+      text-align: center;
+    }
+
+    .cta-content {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      font-size: 18px;
+      opacity: 0.8;
+      margin-bottom: 32px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px 24px;
+      background: var(--gray-900);
+      color: white;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 48px;
+    }
+
+    .footer-brand {
+      max-width: 280px;
+    }
+
+    .footer-brand .logo {
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .footer-brand p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+    }
+
+    .footer-links h4 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .footer-links a {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      padding: 6px 0;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 48px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero-stats {
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .hero-cta {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-content">
+      <a href="#" class="logo">
+        <div class="logo-icon">🛡️</div>
+        ProtectYaNeck
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#risks">What We Detect</a>
+        <a href="#" class="btn btn-primary">Add to Chrome - Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <span class="hero-badge">🚀 Now Available for Chrome</span>
+      <h1>Stop Signing Away <span class="hero-highlight">Your Rights</span></h1>
+      <p>ProtectYaNeck scans Terms of Service and Privacy Policies in real-time, showing you what you're really agreeing to before you click "Accept."</p>
+      <div class="hero-cta">
+        <a href="#" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2z"/>
+            <path d="M12 5.3c-3.7 0-6.7 3-6.7 6.7s3 6.7 6.7 6.7c1.9 0 3.7-.8 4.9-2.1L12 12V5.3z"/>
+          </svg>
+          Add to Chrome - It's Free
+        </a>
+        <a href="#features" class="btn btn-secondary">See How It Works</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-value">92%</div>
+          <div class="stat-label">of agreements contain hidden risks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">8</div>
+          <div class="stat-label">risk categories detected</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">&lt;3s</div>
+          <div class="stat-label">average scan time</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="problem">
+    <div class="problem-content">
+      <h2>Nobody Reads the Fine Print</h2>
+      <p>You click "I Agree" dozens of times a year. But do you know what you're actually agreeing to?</p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-card-icon">📤</div>
+          <h3>Your Data Gets Sold</h3>
+          <p>73% of services share your personal information with third parties, advertisers, and "partners."</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-card-icon">⚖️</div>
+          <h3>You Can't Sue</h3>
+          <p>Binding arbitration clauses strip away your right to take companies to court or join class actions.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-card-icon">💳</div>
+          <h3>Hidden Auto-Renewal</h3>
+          <p>Subscriptions auto-renew with vague cancellation policies designed to keep charging you.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-card-icon">🚫</div>
+          <h3>They Can Delete You</h3>
+          <p>"Terminate at our sole discretion" means your account — and data — can vanish without warning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="features-content">
+      <h2>How ProtectYaNeck Works</h2>
+      <p>Automatic protection that works while you browse</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Auto-Detection</h3>
+          <p>Automatically recognizes Terms of Service, Privacy Policies, and sign-up agreements on any website.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Instant Analysis</h3>
+          <p>Scans agreements in seconds using advanced pattern matching and AI to identify concerning clauses.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Visual Risk Cards</h3>
+          <p>Color-coded severity ratings from green (low risk) to red (critical) make dangers obvious at a glance.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📝</div>
+          <h3>Plain English</h3>
+          <p>Translates legal jargon into clear, actionable summaries anyone can understand.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛑</div>
+          <h3>Before-You-Sign Alerts</h3>
+          <p>Intercepts "I Agree" clicks to show you what you're accepting before it's too late.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Risk Scoring</h3>
+          <p>See how this agreement compares to industry averages. Know if you're getting a fair deal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Risk Categories -->
+  <section class="risks" id="risks">
+    <div class="risks-content">
+      <h2>What We Detect</h2>
+      <div class="risk-grid">
+        <div class="risk-item">
+          <span class="risk-badge critical">Critical</span>
+          <span class="risk-name">Arbitration Clauses</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge high">High</span>
+          <span class="risk-name">Data Sharing</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge high">High</span>
+          <span class="risk-name">Liability Waivers</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge high">High</span>
+          <span class="risk-name">Third-Party Access</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge medium">Medium</span>
+          <span class="risk-name">Auto-Renewal</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge medium">Medium</span>
+          <span class="risk-name">Data Retention</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge medium">Medium</span>
+          <span class="risk-name">Account Termination</span>
+        </div>
+        <div class="risk-item">
+          <span class="risk-badge low">Low</span>
+          <span class="risk-name">Jurisdiction</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing" id="pricing">
+    <div class="pricing-content">
+      <h2>Simple, Transparent Pricing</h2>
+      <p>Start protecting yourself for free</p>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-label">Free</div>
+          <div class="pricing-price">$0</div>
+          <p class="pricing-desc">Perfect for occasional use</p>
+          <ul class="pricing-features">
+            <li>5 scans per month</li>
+            <li>8 risk categories</li>
+            <li>Color-coded severity</li>
+            <li>Plain English summaries</li>
+            <li>Before-you-sign alerts</li>
+          </ul>
+          <a href="#" class="btn btn-secondary">Get Started Free</a>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-label">Pro</div>
+          <div class="pricing-price">$4.99<span>/month</span></div>
+          <p class="pricing-desc">For power users who sign up everywhere</p>
+          <ul class="pricing-features">
+            <li>Unlimited scans</li>
+            <li>Everything in Free</li>
+            <li>Scan history</li>
+            <li>Risk score comparisons</li>
+            <li>Priority support</li>
+            <li>Cloud sync across devices</li>
+          </ul>
+          <a href="#" class="btn btn-primary">Upgrade to Pro</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="cta-content">
+      <h2>Ready to Protect Yourself?</h2>
+      <p>Join thousands of users who now know what they're agreeing to before they click.</p>
+      <a href="#" class="btn btn-primary" style="background: white; color: var(--gray-900);">
+        Add to Chrome - Free
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <div class="logo-icon">🛡️</div>
+          ProtectYaNeck
+        </a>
+        <p>Your legal safety layer for the internet. We read the fine print so you don't have to.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#risks">What We Detect</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div class="footer-links">
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Blog</a>
+        <a href="#">Contact</a>
+        <a href="#">Careers</a>
+      </div>
+      <div class="footer-links">
+        <h4>Legal</h4>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="#">Cookie Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025 ProtectYaNeck. All rights reserved.</span>
+      <span>Made with ❤️ for consumer rights</span>
+    </div>
+  </footer>
+</body>
+</html>

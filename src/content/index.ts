@@ -2,6 +2,7 @@ import { detectAgreement, extractAgreementText } from './detector';
 import { analyzeRisks, calculateOverallSeverity, generateOverallSummary } from './analyzer';
 import { overlay } from './overlay';
 import { lawyerModal } from './LawyerModal';
+import { initInterceptor, setInterceptorEnabled } from './interceptor';
 import { ScanResult, UsageData, Settings, STORAGE_KEYS } from '../shared/types';
 import { DEFAULT_SETTINGS, DEFAULT_USAGE, FREE_SCANS_PER_MONTH } from '../shared/constants';
 import Analytics from '../services/analytics';
@@ -53,6 +54,9 @@ async function init(): Promise<void> {
       autoDetectAndNotify();
     }, 1000);
   }
+
+  // Initialize before-you-sign interceptor
+  initInterceptor();
 }
 
 /**
