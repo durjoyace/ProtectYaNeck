@@ -1,5 +1,3 @@
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
 import path from 'path';
 import fs from 'fs';
 
@@ -76,10 +74,48 @@ const defaultData: DatabaseSchema = {
   events: [],
 };
 
-let db: Low<DatabaseSchema> | null = null;
+// Simple JSON file database
+class JsonDatabase {
+  private filePath: string;
+  public data: DatabaseSchema;
 
-export async function initDatabase(): Promise<Low<DatabaseSchema>> {
-  const dataDir = path.join(__dirname, '../../data');
+  constructor(filePath: string) {
+    this.filePath = filePath;
+    this.data = defaultData;
+  }
+
+  async read(): Promise<void> {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const content = fs.readFileSync(this.filePath, 'utf-8');
+        this.data = JSON.parse(content);
+      } else {
+        this.data = { ...defaultData };
+      }
+    } catch (error) {
+      console.error('Error reading database:', error);
+      this.data = { ...defaultData };
+    }
+  }
+
+  async write(): Promise<void> {
+    try {
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
+    } catch (error) {
+      console.error('Error writing database:', error);
+      throw error;
+    }
+  }
+}
+
+let db: JsonDatabase | null = null;
+
+export async function initDatabase(): Promise<JsonDatabase> {
+  const dataDir = path.join(process.cwd(), 'data');
 
   // Ensure data directory exists
   if (!fs.existsSync(dataDir)) {
@@ -87,14 +123,13 @@ export async function initDatabase(): Promise<Low<DatabaseSchema>> {
   }
 
   const dbPath = path.join(dataDir, 'db.json');
-  const adapter = new JSONFile<DatabaseSchema>(dbPath);
-  db = new Low<DatabaseSchema>(adapter, defaultData);
+  db = new JsonDatabase(dbPath);
 
   await db.read();
 
   // Initialize with default data if empty
-  if (!db.data) {
-    db.data = defaultData;
+  if (!db.data || !db.data.users) {
+    db.data = { ...defaultData };
     await db.write();
   }
 
@@ -102,17 +137,10 @@ export async function initDatabase(): Promise<Low<DatabaseSchema>> {
   return db;
 }
 
-export async function getDatabase(): Promise<Low<DatabaseSchema>> {
+export async function getDatabase(): Promise<JsonDatabase> {
   if (!db) {
     return initDatabase();
   }
   await db.read();
   return db;
-}
-
-// Run initialization if called directly
-if (require.main === module) {
-  initDatabase().then(() => {
-    console.log('Database setup complete');
-  });
 }
