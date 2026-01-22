@@ -1,10 +1,7 @@
 import { RiskCategory, RiskSeverity, Settings, UsageData } from './types';
 
 // API Configuration
-// In production, this should point to your deployed backend
-export const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://protectyaneck-api.up.railway.app'  // Update this with your actual API URL
-  : 'http://localhost:3001';
+export const API_URL = 'https://protectyaneck-production.up.railway.app';
 
 // Tier limits
 export const FREE_SCANS_PER_MONTH = 5;
